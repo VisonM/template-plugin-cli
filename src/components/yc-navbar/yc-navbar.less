@@ -1,0 +1,200 @@
+// 1001是全局loading的z-index
+@nav-z-index: 1030;
+
+.d-flex {
+  display: flex !important;
+}
+
+.flex-grow-1 {
+  flex-grow: 1 !important;
+}
+
+.align-items-center {
+  align-items: center !important;
+}
+
+.navbar-space {
+  position: relative;
+  z-index: @nav-z-index;
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: @nav-z-index;
+}
+
+.navbar-inner {
+  position: relative;
+}
+
+.normal-status {
+  padding-left: 10rpx;
+}
+
+.nav-back {
+  width: 60rpx;
+  height: 60rpx;
+  margin-right: 7rpx;
+  background-image: url("https://img.suv666.com/ui/ycyh/v39/navbar/navbar/icon_top_return.png");
+  background-size: 100%;
+  background-repeat: no-repeat;
+}
+
+.nav-icon {
+  position: relative;
+  display: flex;
+  padding-right: 8rpx;
+  align-items: center;
+  // 防止被slot遮挡
+  z-index: 1;
+
+  & + &::before,
+  &.home-line::before {
+     content: "";
+     width: 1px;
+     height: 22rpx;
+     margin-right: 8rpx;
+     background: #ddd;
+   }
+
+  &::after {
+    content: "";
+    width: 60rpx;
+    height: 60rpx;
+    background-size: 100%;
+    background-repeat: no-repeat;
+  }
+
+  &.home::after {
+    background-image: url("https://img.suv666.com/ui/ycyh/v39/navbar/navbar/icon_top_home_black.png");
+  }
+  &.share::after {
+    background-image: url("https://img.suv666.com/ui/ycyh/3_0/1025/icon_btn_share_black.png");
+  }
+  &.modify::after {
+    background-image: url("https://img.suv666.com/ui/ycyh/3_0/wxapp/icon_back_modify.png");
+    z-index: 2;
+  }
+  &.switch-zone::after {
+    background-image: url("https://img.suv666.com/ui/ycyh/common/zone_0801/icon_top_switch_white.png");
+  }
+  &.message::after {
+    background-image: url("https://img.suv666.com/ui/ycqkj/common/persional_center/icon_top_me_white.png");
+  }
+  &.message-setting::after{
+    background-image: url("https://img.suv666.com/ui/ycyh/3_0/wxapp/notification/icon_top_setting_black.png");
+  }
+}
+.white .switch-zone::after {
+  background-image: url("https://img.suv666.com/ui/ycyh/common/zone_0801/icon_top_switch_black.png");
+}
+.white .message::after {
+  background-image: url("https://img.suv666.com/ui/ycqkj/common/persional_center/icon_top_me_black.png");
+}
+
+.dark .nav-icon {
+  &.home::after {
+    background-image: url("https://img.suv666.com/ui/ycyh/v39/navbar/navbar/icon_top_home_white.png");
+  }
+  &.share::after {
+    background-image: url("https://img.suv666.com/ui/ycyh/3_0/1025/icon_top_share_white.png");
+  }
+}
+.dark .nav-back {
+  background-image: url("https://img.suv666.com/ui/ycyh/3_0/icon_top_back_white.png");
+}
+.share-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+.slot-container,
+.page-title {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.slot-container {
+  display: flex;
+  width: 80%;
+  justify-content: center;
+}
+
+.page-title {
+  width: 300rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: PingFangSC-Semibold;
+  font-size: 36rpx;
+  letter-spacing: 0;
+  line-height: 52rpx;
+  text-align: center;
+}
+.navbar-bg{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: @nav-z-index - 1;
+}
+
+.message-toast {
+  position: absolute;
+  left: 10rpx;
+  bottom: -48rpx;
+  padding: 2rpx 14rpx;
+  border-radius: 8rpx;
+  background-color: #ff0013;
+  white-space: nowrap;
+  font-weight: bold;
+  font-size: 20rpx;
+  color: #fff;
+  line-height: 32rpx;
+
+  &::before {
+    position: absolute;
+    bottom: 30rpx;
+    left: 14rpx;
+    content: "";
+    width: 12rpx;
+    height: 12rpx;
+    transform: rotate(-45deg);
+    background: #FF0013;
+    border-radius: 0 2rpx 0 0;
+  }
+}
+.nav-search{
+  width: 440rpx;
+  height: 64rpx;
+  margin-left: 22rpx;
+  background: #FFFFFF;
+  border-radius: 79rpx;
+  font-size: 26rpx;
+  color: #B0B0B0;
+  &__sm{
+    width: 357rpx;
+  }
+  &__icon{
+    width: 48rpx;
+    height: 48rpx;
+    margin: 0 10rpx 0 16rpx;
+  }
+}
+
+.store-home{
+  width: 60rpx;
+  height: 60rpx;
+  margin-right: 7rpx;
+  background: url(https://img.suv666.com/ui/ycqkj/common/1031/icon_top_store_black.png) no-repeat;
+  background-size: 100%;
+}

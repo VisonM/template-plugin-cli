@@ -1,0 +1,250 @@
+@import "variable.less";
+
+
+.no-btn {
+  display: block;
+  background-color: inherit;
+  text-align: inherit;
+  padding-left: inherit;
+  padding-right: inherit;
+  margin-left: inherit;
+  margin-right: inherit;
+  box-sizing: inherit;
+  border-radius: inherit;
+  line-height: 1;
+  &:after {
+    display: none;
+  }
+}
+
+.mask-bg {
+	.WH(100%);
+	.fixed();
+	background-color: rgba(0, 0, 0, .7);
+	z-index: @zindex-popover;
+}
+.fixed() {
+	height:100%;
+	width:100%;
+	position: fixed;
+	left:0;
+	top:0;
+}
+
+.ab(){
+	height:100%;
+	width:100%;
+	position: absolute;
+	left:0;
+	top:0;
+}
+.bbx(){
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+.abCenter(){
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}
+
+//背景
+.background(@c){
+	background:url(@c) no-repeat;
+}
+.bgc(@c:#fff){
+	background-color:@c;
+}
+.bgz(@w:100%,@h:100%){
+	background-size:@w @h;
+}
+.bgp(@c:center,@t:center){
+	background-position:@c @t;
+}
+
+
+// 布局
+.flex(@c:row){
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+	flex-direction:@c;
+}
+
+// flex水平垂直居中
+.flexVHCenter(){
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+// flex水平居中
+.flexHCenter(){
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+	justify-content: center;	
+}
+
+// flex垂直居中
+.flexVCenter(){
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+	align-items: center;
+}
+
+// inline-flex水平垂直居中
+.iFlexVHCenter(){
+	display: -webkit-inline-flex;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.rounded(@amount) {
+	-moz-border-radius: @amount;
+	-webkit-border-radius: @amount;
+	border-radius: @amount;
+}
+
+
+
+
+/*变换居中*/
+.tranformCenter(){
+	left:50%;
+	top:50%;
+	-webkit-transform: translate3d(-50%,-50%,0);
+	transform: translate3d(-50%,-50%,0);
+}
+
+.WH(@width){
+	width: @width;
+	height: @width;
+}
+
+.autoCenter(){
+		   top: 0;
+		   left: 0;
+		   bottom: 0;
+		   right: 0;
+		   margin: auto;
+	   }
+
+.rounder-side(@tl,@tr,@bl,@br){
+	-moz-border-radius: @tl @tr @bl @br;
+	-webkit-border-radius: @tl @tr @bl @br;
+	border-radius: @tl @tr @bl @br;
+}
+
+.height(@height){
+	height: @height;
+	line-height: @height;
+}
+
+
+.skewX(@degrees) {
+@include prefixer(transform, skewX(@degrees), webkit moz o ms spec);
+	-webkit-backface-visibility: hidden;
+}
+
+/*多行超出,显示为省略号*/
+.wordEllipsisNum(@lineNum){
+	word-break: break-word;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: @lineNum;
+	-webkit-box-orient: vertical;
+}
+.wordEllipsis(){
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+}
+
+/*三角形*/
+.setTopLine(@c: #C7C7C7) {
+	content: " ";
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	height: 1px;
+	border-top: 1px solid @c;
+	color: @c;
+	transform-origin: 0 0;
+	transform: scaleY(0.5);
+}
+
+.setBottomLine(@c: #C7C7C7) {
+	content: " ";
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	height: 1px;
+	border-bottom: 1px solid @c;
+	color: @c;
+	transform-origin: 0 100%;
+	transform: scaleY(0.5);
+}
+
+.setLeftLine(@c: #C7C7C7) {
+	content: " ";
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 1px;
+	bottom: 0;
+	border-left: 1px solid @c;
+	color: @c;
+	transform-origin: 0 0;
+	transform: scaleX(0.5);
+}
+
+.setRightLine(@c: #C7C7C7) {
+	content: " ";
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 1px;
+	bottom: 0;
+	border-right: 1px solid @c;
+	color: @c;
+	transform-origin: 100% 0;
+	transform: scaleX(0.5);
+}
+
+/*三角形*/
+.triangleup(@left: 3px,@right: 3px,@bottom:4px ,@color : #E2E5E8) {
+	content:' ';
+	width: 0;
+	height: 0;
+	border-left: @left solid transparent;
+	border-right: @right solid transparent;
+	border-bottom: @bottom solid @color;
+}
+
+// 旋转
+.rotate(@deg: 180deg){
+	transform:rotate(@deg);
+    -webkit-transform:rotate(@deg);  /*兼容-webkit-引擎浏览器*/
+}
+
+
+.nowrap(){
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.box-shadow {
+	box-shadow: 0 4px 20px 0 rgba(115,115,118,0.10);
+}

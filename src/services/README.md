@@ -1,0 +1,1 @@
+### 慢慢将公共的tool.js 或者other方法慢慢按逻辑模块解藕到services下。为了将来能够充分利用tree shaking 

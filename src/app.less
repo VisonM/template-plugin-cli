@@ -1,0 +1,27 @@
+// Global style write by less
+// Build to dist/app.wxss
+@import "./less/base/mixin.less";
+@import "./less/font/DINAlternate-Bold.less";
+
+page {
+	// display: flex;
+	// flex-direction: column;
+	height: 100%;
+	width: 100%;
+	background-color: #f5f5f5;
+	font-family: -apple-system-font, 'Helvetica Neue', Helvetica, 'Microsoft YaHei', sans-serif;
+	box-sizing: border-box;
+}
+
+form {
+	box-sizing: border-box;
+}
+
+.din-alternate-bold {
+	font-family: "DINAlternate-Bold" !important;
+}
+
+// 刘海屏占位
+.safe-area-inset-bottom{
+  padding-bottom: calc(env(safe-area-inset-bottom)/2);
+}

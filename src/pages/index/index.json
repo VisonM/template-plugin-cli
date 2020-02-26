@@ -1,0 +1,9 @@
+{
+    "navigationBarTitleText": "群空间",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTextStyle": "black",
+    "enablePullDownRefresh": true,
+    "backgroundTextStyle": "dark",
+    "usingComponents": {
+    }
+}

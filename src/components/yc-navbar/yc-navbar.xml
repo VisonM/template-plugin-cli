@@ -1,0 +1,45 @@
+<view>
+  <view class="navbar-space" style="padding-top: {{statusBarHeight}}px;">
+    <view class="navbar-inner-space" style="height: {{navbarHeight}}px;" />
+  </view>
+  <view class="navbar" style="padding-top: {{statusBarHeight}}px;">
+    <view class="navbar-inner d-flex align-items-center"
+      style="height:{{navbarHeight}}px;padding-right: {{navbarPaddingRight}}px;">
+      <view
+        class="normal-status {{(color === '#fff' || color === '#ffffff' || color === 'white') ? 'dark' : 'white'}} d-flex flex-grow-1 align-items-center">
+        <block wx:if="{{isTabPage}}">
+          <block wx:if="{{!hideNav}}">
+            <view class="nav-icon switch-zone" bindtap="switchZone" wx:if="{{allZoneList.length > 1 && isIndex}}" />
+          </block>
+          <block wx:if="{{showStoreSearch}}">
+            <view class="nav-icon share" catchtap="onUserShare" data-auto-statistics="{{shareData}}">
+              <button class="share-btn" open-type="share" />
+            </view>
+            <view catchtap="goToStoreSearchPage" class="d-flex align-items-center nav-search {{!hideNav?'nav-search__sm':''}}">
+              <image class="nav-search__icon" src="https://img.suv666.com/ui/ycqkj/common/1023/icon_search_main_gray.png"></image>
+              <text>搜索商品</text>
+            </view>
+          </block>
+        </block>
+        <block wx:else>
+          <view class="nav-back" hidden="{{hideNavBack}}" bindtap="navBack" />
+          <view class="nav-icon home {{hideNavBack ? '' : 'home-line'}}" wx:if="{{!hideHome}}"
+            catchtap="navigateToHome" />
+          <view class="nav-icon store-home {{hideNavBack ? '' : 'home-line'}}" wx:if="{{showStoreHome}}"
+            catchtap="navigateToStoreHome" />
+          <view class="nav-icon share" hidden="{{hideShare}}" catchtap="onUserShare" data-auto-statistics="{{shareData}}">
+            <button class="share-btn" open-type="share" />
+          </view>
+          <view class="nav-icon message-setting" catchtap="goToMessageSetting" wx:if="{{showMessageSetting}}"/>
+          <view class="nav-icon modify" catchtap="goToModify" wx:if="{{showModify}}"/>
+        </block>
+        <view wx:if="{{hideTitle}}" class="slot-container">
+          <slot></slot>
+        </view>
+        <view class="page-title" wx:else style="color: {{color}};">{{title}}</view>
+      </view> 
+    </view>
+  </view>
+  <view class="navbar-bg" style="background-color: {{background}};height: {{statusBarHeight+navbarHeight}}px;"></view>
+</view>
+

@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "baseUrl": ".",
+    "paths": {
+      "src/*": [
+        "./src/*"
+      ],
+      "components/*": [
+        "./src/components/*"
+      ],
+    },
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".vscode"
+  ],
+}

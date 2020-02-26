@@ -1,0 +1,2275 @@
+
+<!--**
+ * author: Di (微信小程序开发工程师)
+ * organization: WeAppDev(微信小程序开发论坛)(http://weappdev.com)
+ *               垂直微信小程序开发交流社区
+ *
+ * github地址: https://github.com/icindy/wxParse
+ *
+ * for: 微信小程序富文本解析
+ * detail : http://weappdev.com/t/wxparse-alpha0-1-html-markdown/184
+ */-->
+
+ <!--基础元素-->
+<template name="wxParseVideo">
+    <!--增加video标签支持，并循环添加-->
+    <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+      <!-- video临时改用腾讯视频插件-v49 -->
+      <news-video
+        tencentVid="{{item.tencent_vid}}"
+        vid="{{item.attr.src}}"
+        cover="{{item.attr.poster}}"
+        videoClassStr="{{item.classStr}}"
+        height="422rpx"
+      />
+    </view>
+</template>
+
+<template name="wxParseImg">
+    <image
+        lazy-load="true"
+        class="{{item.classStr}} wxParse-{{item.tag}} ui-image-default"
+        data-from="{{item.from}}"
+        data-src="{{item.attr.src}}"
+        data-idx="{{item.imgIndex}}"
+        src="{{item.attr.src}}"
+        mode="widthFix"
+        bindload="wxParseImgLoad"
+        bindtap="{{item.redirect_type ? '' : 'wxParseImgTap'}}"
+        style="width:{{item.width}}px;"
+    />
+</template>
+
+<template name="WxEmojiView">
+  <span class="WxEmojiView wxParse-inline" style="{{item.styleStr}}">
+    <block wx:for="{{item.textArray}}" wx:key="">
+      <block class="{{item.text == '\\n' ? 'wxParse-hide':''}}" wx:if="{{item.node == 'text'}}">{{item.text}}</block>
+      <block wx:elif="{{item.node == 'element'}}">
+        <image class="wxEmoji" src="{{item.baseSrc}}{{item.text}}" />
+      </block>
+    </block>
+  </span>
+</template>
+
+<!--入口模版-->
+
+<template name="wxParse">
+    <block wx:for="{{wxParseData}}" wx:key="">
+        <template is="wxParse0" data="{{item}}"/>
+    </block>
+</template>
+
+
+<!--循环模版-->
+<template name="wxParse0">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse1" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse1" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}" data-redirect_type="{{item.attr.redirect_type}}"  data-redirect_target="{{item.attr.redirect_target}}" catchtap="blockTap">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse1" data="{{item, redirect_type:item.attr.redirect_type}}"/>
+                </block>
+            </view>
+        </block>
+                <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline 1212  {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap" 
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap"
+            >
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse1" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view 
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap"
+            >
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse1" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse1" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse1" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+
+        <!--内联标签-->
+        <view wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse1" data="{{item}}"/>
+            </block>
+        </view>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+
+
+
+<!--循环模版-->
+<template name="wxParse1">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse2" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse2" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline 1212  {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap" 
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap"
+            >
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse2" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view 
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                    data-wx_app_id="{{item.attr.wx_app_id}}"
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse2" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse2" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse2" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse2" data="{{item, redirect_type:item.attr.redirect_type}}"/>
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+
+
+<!--循环模版-->
+<template name="wxParse2">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse3" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse3" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline 1212  {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap" 
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse3" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view 
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}"
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap"
+            >
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse3" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse3" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse3" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse3" data="{{item}}"/>
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+
+<!--循环模版-->
+<template name="wxParse3">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse4" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse4" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline  {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap" 
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse4" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}"
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse4" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse4" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse4" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"      
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+        
+
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse4" data="{{item}}"/>
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+
+<!--循环模版-->
+<template name="wxParse4">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse5" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse5" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline    {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap"
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse5" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view 
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse5" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse5" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse5" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse5" data="{{item}}"/>
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+
+<!--循环模版-->
+<template name="wxParse5">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse6" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse6" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline    {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap" 
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}"
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse6" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view 
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}" 
+                data-redirect_target="{{item.attr.redirect_target}}"
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse6" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse6" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse6" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse6" data="{{item}}"/>
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+
+<!--循环模版-->
+<template name="wxParse6">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse7" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse7" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline 1212  {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap"
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}"
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse7" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view 
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}"
+                data-redirect_type="{{item.attr.redirect_type}}" 
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse7" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse7" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse7" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse7" data="{{item}}"/>
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+<!--循环模版-->
+<template name="wxParse7">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse8" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse8" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline 1212  {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap"
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse8" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view 
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse8" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse8" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse8" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap"> 
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse8" data="{{item}}"/>
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+
+<!--循环模版-->
+<template name="wxParse8">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse9" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse9" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline 1212  {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap"
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}"
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse9" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view 
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse9" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse9" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse9" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse9" data="{{item}}"/>
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+
+<!--循环模版-->
+<template name="wxParse9">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse10" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse10" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline 1212  {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap" 
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse10" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view 
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse10" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse10" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse10" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse10" data="{{item}}"/>
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+
+<!--循环模版-->
+<template name="wxParse10">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse11" data="{{item}}"/>
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse11" data="{{item}}"/>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline 1212  {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap" 
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}"
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        <template is="wxParse11" data="{{item}}" />
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view 
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}" 
+                data-redirect_target="{{item.attr.redirect_target}}"
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                            <template is="wxParse11" data="{{item}}" />
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse11" data="{{item}}" />
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                    <template is="wxParse11" data="{{item}}"/>
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                <template is="wxParse11" data="{{item}}"/>
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>
+
+<!--循环模版-->
+<template name="wxParse11">
+    <!--判断是否是标签节点-->
+    <block wx:if="{{item.node == 'element'}}">
+        <block wx:if="{{item.tag == 'button'}}">
+            <button type="default" size="mini" >
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                </block>
+             </button>
+        </block>
+        <!--li类型-->
+        <block wx:elif="{{item.tag == 'li'}}">
+            <view class="{{item.classStr}} wxParse-li" style="{{item.styleStr}}">
+                <view class="{{item.classStr}} wxParse-li-inner">
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <view class="{{item.classStr}} wxParse-li-circle"></view>
+                    </view>
+                    <view class="{{item.classStr}} wxParse-li-text">
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!--video类型-->
+        <block wx:elif="{{item.tag == 'video'}}">
+            <template is="wxParseVideo" data="{{item}}"/>
+        </block>
+
+        <!--img类型-->
+        <block wx:elif="{{item.tag == 'img'}}">
+            <template is="wxParseImg" data="{{item}}"/>
+        </block>
+
+        <!--a类型-->
+        <block wx:elif="{{item.tag == 'a'}}">
+          <view bindtap="wxParseTagATap" class="wxParse-inline 1212  {{item.classStr}} wxParse-{{item.tag}}" data-src="{{item.attr.href}}"  style="{{item.styleStr}}">
+            <!-- 跳转小程序 文字 -->
+            <view 
+                class="custom-navigator__wrap" 
+                wx:if="{{item.classStr=='mp-miniprogram weapp_text_link'}}" 
+                data-redirect_type="{{item.attr.redirect_type}}"  
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}" > -->
+                      <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                      </block>
+                    <!-- </navigator> -->
+                </custom-service-btn>
+            </view>
+            <!-- 跳转小程序 图片 -->
+            <view
+                wx:elif="{{item.classStr=='mp-miniprogram weapp_image_link'}}"
+                data-redirect_type="{{item.attr.redirect_type}}"
+                data-redirect_target="{{item.attr.redirect_target}}" 
+                data-wx_app_path="{{item.attr.wx_app_path}}" 
+                data-wx_app_id="{{item.attr.wx_app_id}}"
+                catchtap="cardTap">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" path="{{item.attr['wx_app_path']}}"> -->
+                        <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                        </block>
+                    <!-- </navigator> -->
+                    <view class="image-logo" ></view>
+                </custom-service-btn>
+            </view>
+ 
+            <view wx:else>
+                <block wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                </block>
+            </view>
+          </view>
+        </block>
+
+        <!--其他块级标签-->
+        <block wx:elif="{{item.tagType == 'block'}}">
+            <view class="{{item.classStr}} wxParse-{{item.tag}}" style="{{item.styleStr}}">
+                <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+                </block>
+            </view>
+        </block>
+                <!-- 跳转小程序 卡片 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element'}}"
+            data-location="4"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <view class="custom-wxapp__card 1212">
+
+                    <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <view class="custom-wxapp__card-icon"></view>
+                    <text>{{item.attr['data-miniprogram-title']}}  </text>
+                    <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        
+                    </view> -->
+                    </view>
+                </view>
+            </custom-service-btn>
+        </view>
+                                <!-- 跳转小程序 车系卡片 源自图片识别 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element series_card'}}"
+            data-location="3"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                <!-- <navigator target="{{item.attr['wx_app_id'] != 'wxd89b0def414d9163' && item.attr['wx_app_id'] != 'wxa1219d243fca70f7'?'miniProgram':''}}" open-type="navigate" app-id="{{item.attr['wx_app_id']}}" url="car_pages_b/pages/car_list/car_list?series_id={{item.attr.redirect_target}}"> -->
+                    <view class="custom-wxapp__card 1212">
+                      <image class="custom-wxapp__card-bd" mode="aspectFill" src="{{item.attr['data-miniprogram-imageurl']}}"></image>
+                      <view class="custom-wxapp__card-tt clearfix">
+                        <view class="custom-wxapp__card-icon"></view>
+                        <text>{{item.attr['data-miniprogram-series']}}  </text>
+                        <!-- <view class="custom-wxapp__card-group pull-right" wx:if="{{item.attr.wx_app_id == 'wxa31dff91e104af87'}}">
+                        </view> -->
+                        <view class="custom-wxapp__card-price-range num-font">{{item.attr['data-miniprogram-price_range']}}</view>
+                      </view>
+                    </view>
+                <!-- </navigator> -->
+            </custom-service-btn>
+        </view>
+        <!-- 广告系统803-跳转加群客服消息 -->
+        <view wx:elif="{{item.classStr=='mp-miniprogram js_weapp_display_element wechat_group_card'}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            catchtap="cardTap">
+            <view class="custom-wxapp__card group_card">
+                <custom-service-btn type="{{item.attr.redirect_type}}" target="{{item.attr.redirect_target}}">
+                    <image class="custom-wxapp__card-bd"
+                    mode="aspectFill"
+                    src="{{item.attr['data-miniprogram-imageurl']}}">
+                    </image>
+                    <view class="custom-wxapp__card-tt clearfix">
+                    <text>{{item.attr['data-miniprogram-title']}}</text>
+                    <view class="custom-wxapp__card-btn num-font">加群</view>
+                    </view>
+                </custom-service-btn>
+            </view>
+        </view>
+
+        <!--内联标签-->
+        <span wx:else
+            class="{{item.classStr}} wxParse-{{item.tag}} wxParse-{{item.tagType}}"
+            style="{{item.styleStr}}"
+            data-location="{{item.attr.location}}"
+            data-car_series_id="{{item.attr.car_series_id}}"
+            data-car_page_type="{{item.attr.car_page_type}}"
+            data-redirect_type="{{item.attr.redirect_type}}"
+            data-redirect_target="{{item.attr.redirect_target}}"
+            data-wx_app_path="{{item.attr.wx_app_path}}"
+            data-wx_app_id="{{item.attr.wx_app_id}}"
+            bindtap="cardTap">
+            <block  wx:for="{{item.nodes}}" wx:for-item="item" wx:key="">
+            </block>
+        </span>
+
+    </block>
+
+    <!--判断是否是文本节点-->
+    <block wx:elif="{{item.node == 'text'}}">
+        <!--如果是，直接进行-->
+        <template is="WxEmojiView" data="{{item}}"/>
+    </block>
+
+</template>

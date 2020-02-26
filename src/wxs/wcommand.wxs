@@ -1,0 +1,41 @@
+var wCommand = function (url, command, isAndroid, handleGif) {
+  if (!url) {
+    return '';
+  }
+  if (url.indexOf('mp4') !== -1) {
+    return url;
+  }
+
+  var isHandleGif = command.indexOf('1x1_100x100') >= 0 || handleGif;
+
+  //if (url.indexOf('wx.qlogo.cn') !== -1) {
+  //  var copyUrl = url.split('/');
+  //copyUrl.pop();
+  //return copyUrl.join('/') + '/' + command;
+  //}
+  //console.log('url',getRegExp("(suv666|qiniucdn)").test(url))
+  if (
+    !getRegExp("(suv666|qiniucdn)").test(url)
+    || url.indexOf(command) !== -1
+    || (url.indexOf('.gif') !== -1 && !isHandleGif)
+  ) {
+    return url;
+  }
+
+
+
+  var cleanUrl = url.split('?')[0];
+
+  if (isAndroid) {
+    return cleanUrl + '-' + command + '_webp';
+  }
+
+  var commandReg = getRegExp("-\d+(x|w)");
+  if (commandReg.test(cleanUrl)) {
+    return cleanUrl.split(commandReg)[0] + '-' + command;
+  }
+  return cleanUrl + '-' + command;
+}
+module.exports = {
+  wCommand: wCommand
+}

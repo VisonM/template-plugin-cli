@@ -1,0 +1,8 @@
+<view class="container">
+  <yc-navbar
+    background="transparent"
+    color="#fff"
+    title="小程序模板脚手架"
+  >
+  </yc-navbar>
+</view>
