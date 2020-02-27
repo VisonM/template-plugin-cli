@@ -1,0 +1,14 @@
+view,
+view::before,
+view::after,
+image,
+button,
+button::before,
+button::after {
+  box-sizing: border-box;
+}
+
+page {
+  font-size: 26rpx;
+  line-height: 1.5;
+}

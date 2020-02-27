@@ -1,0 +1,31 @@
+{
+  "pages": [
+    "index/index",
+    "login/login"
+  ],
+  "tabBar": {
+    "color": "#262626",
+    "selectedColor": "#ff0013",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "index/index",
+        "text": "首页",
+        "iconPath": "./images/icon_tab_thread_1.png",
+        "selectedIconPath": "./images/icon_tab_thread.png"
+      },
+      {
+        "pagePath": "login/login",
+        "text": "我的",
+        "iconPath": "./images/icon_tab_my_1.png",
+        "selectedIconPath": "./images/icon_tab_my.png"
+      }
+    ]
+  },
+  "window": {
+    "navigationBarTitleText": "卖车帮",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black"
+  },
+  "sitemapLocation": "sitemap.json"
+}
